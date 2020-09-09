@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv_pedometer;
     public StepCallback stepCallback = new StepCallback() {
         @Override
-        public void onStepCallBack(int date, int step) {
+        public void onStepCallBack(int date) {
             if (pedometerDataList.isEmpty()) {
                 realm.beginTransaction();
                 pedometerDataModel = realm.createObject(PedometerDataModel.class);

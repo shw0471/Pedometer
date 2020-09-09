@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -25,13 +24,9 @@ public class PedometerService extends Service implements SensorEventListener {
 
 
     private MyBinder myBinder = new MyBinder();
-    private Intent intent = new Intent();
     private SensorManager sensorManager;
     private Sensor stepDetectorSensor;
-    private int stepCount;
     private StepCallback callback;
-    private Date today = new Date();
-    private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
     public void setCallback(StepCallback callback) {
         this.callback = callback;
@@ -51,7 +46,7 @@ public class PedometerService extends Service implements SensorEventListener {
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
         if (stepDetectorSensor != null) {
-            sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
     }
 
@@ -60,7 +55,7 @@ public class PedometerService extends Service implements SensorEventListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             channel = createChannel();
         else {
-            channel = "";
+            channel = null;
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channel)
@@ -75,21 +70,19 @@ public class PedometerService extends Service implements SensorEventListener {
     @NonNull
     @TargetApi(26)
     private synchronized String createChannel() {
-        NotificationManager mNotificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
         String name = "Pedometer";
         int importance = NotificationManager.IMPORTANCE_LOW;
 
-        NotificationChannel mChannel = new NotificationChannel("Pedometer", name, importance);
+        NotificationChannel notificationChannel = new NotificationChannel("Pedometer", name, importance);
 
-        mChannel.enableLights(true);
-        mChannel.setLightColor(Color.BLUE);
-        if (mNotificationManager != null) {
-            mNotificationManager.createNotificationChannel(mChannel);
+        if (notificationManager != null) {
+            notificationManager.createNotificationChannel(notificationChannel);
         } else {
             stopSelf();
         }
-        return "snap map channel";
+        return "Pedometer";
     }
 
     @Override
@@ -100,7 +93,7 @@ public class PedometerService extends Service implements SensorEventListener {
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
         if (stepDetectorSensor != null) {
-            sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
 
         return super.onStartCommand(intent, flags, startId);
@@ -120,10 +113,11 @@ public class PedometerService extends Service implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            stepCount += 1;
+            Date today = new Date();
+            SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
             if (callback != null)
-                callback.onStepCallBack(Integer.parseInt(date.format(today)), stepCount);
+                callback.onStepCallBack(Integer.parseInt(date.format(today)));
         }
     }
 
