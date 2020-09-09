@@ -114,16 +114,13 @@ public class PedometerService extends Service implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            Date today = new Date();
-
             if (callback != null)
-                callback.onStepCallBack(Integer.parseInt(date.format(today)));
+                callback.onStepCallBack(Integer.parseInt(date.format(new Date())));
         }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
     }
 
     class MyBinder extends Binder {

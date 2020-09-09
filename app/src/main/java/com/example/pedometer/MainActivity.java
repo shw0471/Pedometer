@@ -62,9 +62,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-
-    private Button btn_f5;
-    private Date today = new Date();
     private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -88,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
         tv_pedometer = findViewById(R.id.tv_pedometer);
         recyclerView = findViewById(R.id.rv_view);
-        btn_f5 = findViewById(R.id.btn_f5);
+        Button btn_f5 = findViewById(R.id.btn_f5);
 
         Realm.init(this);
         realm = Realm.getDefaultInstance();
@@ -104,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(pedometerListAdapter);
         pedometerListAdapter.setList(pedometerDataList);
 
-        int date = Integer.parseInt(this.date.format(today));
+        int date = Integer.parseInt(this.date.format(new Date()));
 
         if (!pedometerDataList.isEmpty()) {
             if (pedometerDataList.last().getDate() == date) {
