@@ -27,6 +27,7 @@ public class PedometerService extends Service implements SensorEventListener {
     private SensorManager sensorManager;
     private Sensor stepDetectorSensor;
     private StepCallback callback;
+    private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
     public void setCallback(StepCallback callback) {
         this.callback = callback;
@@ -114,7 +115,6 @@ public class PedometerService extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
             Date today = new Date();
-            SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
             if (callback != null)
                 callback.onStepCallBack(Integer.parseInt(date.format(today)));
