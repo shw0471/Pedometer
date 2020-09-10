@@ -10,39 +10,39 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import io.realm.Realm;
+import io.realm.RealmResults;
+
 public class PedometerService extends Service implements SensorEventListener {
 
-
-    private MyBinder myBinder = new MyBinder();
+    PedometerDataModel pedometerDataModel;
     private SensorManager sensorManager;
     private Sensor stepDetectorSensor;
-    private StepCallback callback;
     private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
+    private Realm realm;
+    private RealmResults<PedometerDataModel> pedometerDataList;
 
-    public void setCallback(StepCallback callback) {
-        this.callback = callback;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return myBinder;
-    }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        startForegroundService();
 
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
+        pedometerDataList = realm.where(PedometerDataModel.class).findAll();
+
+        startForegroundService();
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
@@ -77,6 +77,7 @@ public class PedometerService extends Service implements SensorEventListener {
         int importance = NotificationManager.IMPORTANCE_LOW;
 
         NotificationChannel notificationChannel = new NotificationChannel("Pedometer", name, importance);
+        notificationChannel.setShowBadge(false);
 
         if (notificationManager != null) {
             notificationManager.createNotificationChannel(notificationChannel);
@@ -88,8 +89,11 @@ public class PedometerService extends Service implements SensorEventListener {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForegroundService();
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
+        pedometerDataList = realm.where(PedometerDataModel.class).findAll();
 
+        startForegroundService();
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
@@ -101,31 +105,46 @@ public class PedometerService extends Service implements SensorEventListener {
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
-        return super.onUnbind(intent);
-    }
-
-    @Override
     public void onDestroy() {
         sensorManager.unregisterListener(this);
         super.onDestroy();
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            if (callback != null)
-                callback.onStepCallBack(Integer.parseInt(date.format(new Date())));
+            int today = Integer.parseInt(date.format(new Date()));
+
+            if (pedometerDataList.isEmpty()) {
+                realm.beginTransaction();
+                pedometerDataModel = realm.createObject(PedometerDataModel.class);
+                pedometerDataModel.setDate(today);
+                pedometerDataModel.setSteps(1);
+                realm.commitTransaction();
+
+            } else if (pedometerDataList.last().getDate() == today) {
+                realm.beginTransaction();
+                pedometerDataList.last().addSteps(1);
+                realm.commitTransaction();
+
+                Log.d("PedometerService", "onSensorChanged: 걸었다.");
+            } else if (pedometerDataList.last().getDate() != today) {
+                realm.beginTransaction();
+                pedometerDataModel = realm.createObject(PedometerDataModel.class);
+                pedometerDataModel.setDate(today);
+                pedometerDataModel.setSteps(1);
+                realm.commitTransaction();
+            }
         }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-    }
-
-    class MyBinder extends Binder {
-        PedometerService getService() {
-            return PedometerService.this;
-        }
     }
 }

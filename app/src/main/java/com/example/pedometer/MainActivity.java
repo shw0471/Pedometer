@@ -1,12 +1,13 @@
 package com.example.pedometer;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,61 +22,18 @@ import java.util.Date;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     Realm realm;
-    PedometerDataModel pedometerDataModel;
     RealmResults<PedometerDataModel> pedometerDataList;
 
-    RecyclerView recyclerView;
-    PedometerListAdapter pedometerListAdapter = new PedometerListAdapter();
+    SensorManager sensorManager;
+    Sensor stepDetectorSensor;
 
-    private PedometerService pedometerService = new PedometerService();
+    private RecyclerView recyclerView;
+    private PedometerListAdapter pedometerListAdapter = new PedometerListAdapter();
     private TextView tv_pedometer;
-    public StepCallback stepCallback = new StepCallback() {
-        @Override
-        public void onStepCallBack(int date) {
-            if (pedometerDataList.isEmpty()) {
-                realm.beginTransaction();
-                pedometerDataModel = realm.createObject(PedometerDataModel.class);
-                pedometerDataModel.setDate(date);
-                pedometerDataModel.setSteps(1);
-                realm.commitTransaction();
-
-                tv_pedometer.setText(String.valueOf(pedometerDataModel.getSteps()));
-
-            } else if (pedometerDataList.last().getDate() == date) {
-                realm.beginTransaction();
-                pedometerDataList.last().addSteps(1);
-                realm.commitTransaction();
-
-                tv_pedometer.setText(String.valueOf(pedometerDataList.last().getSteps()));
-
-            } else if (pedometerDataList.last().getDate() != date) {
-                realm.beginTransaction();
-                pedometerDataModel = realm.createObject(PedometerDataModel.class);
-                pedometerDataModel.setDate(date);
-                pedometerDataModel.setSteps(1);
-                realm.commitTransaction();
-
-                tv_pedometer.setText(String.valueOf(pedometerDataModel.getSteps()));
-            }
-        }
-    };
     private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
-
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            PedometerService.MyBinder myBinder = (PedometerService.MyBinder) iBinder;
-            pedometerService = myBinder.getService();
-            pedometerService.setCallback(stepCallback);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-        }
-    };
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -87,16 +45,20 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.rv_view);
         Button btn_f5 = findViewById(R.id.btn_f5);
 
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+
+        if (stepDetectorSensor != null) {
+            sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+
         Realm.init(this);
         realm = Realm.getDefaultInstance();
         pedometerDataList = realm.where(PedometerDataModel.class).findAll();
 
         Intent intent = new Intent(this, PedometerService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent);
-        } else startService(intent);
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
+        else startService(intent);
 
         recyclerView.setAdapter(pedometerListAdapter);
         pedometerListAdapter.setList(pedometerDataList);
@@ -115,5 +77,23 @@ public class MainActivity extends AppCompatActivity {
                 pedometerListAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        int date = Integer.parseInt(this.date.format(new Date()));
+
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+            if (!pedometerDataList.isEmpty()) {
+                if (pedometerDataList.last().getDate() == date) {
+                    tv_pedometer.setText(String.valueOf(pedometerDataList.last().getSteps()));
+                } else tv_pedometer.setText("0");
+            } else tv_pedometer.setText("0");
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
     }
 }
