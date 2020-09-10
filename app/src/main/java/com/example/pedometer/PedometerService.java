@@ -133,7 +133,6 @@ public class PedometerService extends Service implements SensorEventListener {
                 pedometerDataList.last().addSteps(1);
                 realm.commitTransaction();
 
-                Log.d("PedometerService", "onSensorChanged: 걸었다.");
             } else if (pedometerDataList.last().getDate() != today) {
                 realm.beginTransaction();
                 pedometerDataModel = realm.createObject(PedometerDataModel.class);
