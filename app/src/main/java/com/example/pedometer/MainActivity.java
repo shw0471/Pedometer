@@ -8,8 +8,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
@@ -33,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private RecyclerView recyclerView;
     private PedometerListAdapter pedometerListAdapter = new PedometerListAdapter();
     private TextView tv_pedometer;
+    private TextView tv_date;
     private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -42,8 +41,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         tv_pedometer = findViewById(R.id.tv_pedometer);
+        tv_date = findViewById(R.id.tv_date);
         recyclerView = findViewById(R.id.rv_view);
-        Button btn_f5 = findViewById(R.id.btn_f5);
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
@@ -70,25 +69,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 tv_pedometer.setText(String.valueOf(pedometerDataList.last().getSteps()));
             } else tv_pedometer.setText("0");
         } else tv_pedometer.setText("0");
-
-        btn_f5.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pedometerListAdapter.notifyDataSetChanged();
-            }
-        });
+        tv_date.setText(Integer.toString(date));
     }
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        int date = Integer.parseInt(this.date.format(new Date()));
-
         if (sensorEvent.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            if (!pedometerDataList.isEmpty()) {
-                if (pedometerDataList.last().getDate() == date) {
-                    tv_pedometer.setText(String.valueOf(pedometerDataList.last().getSteps()));
-                } else tv_pedometer.setText("0");
-            } else tv_pedometer.setText("0");
+            tv_pedometer.setText(String.valueOf(pedometerDataList.last().getSteps()));
+            tv_date.setText(String.valueOf(pedometerDataList.last().getDate()));
         }
     }
 

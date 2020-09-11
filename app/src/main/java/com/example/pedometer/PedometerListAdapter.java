@@ -9,12 +9,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PedometerListAdapter extends RecyclerView.Adapter<PedometerListAdapter.ViewHolder> {
 
     private List<PedometerDataModel> pedometerDataModelsList = new ArrayList<>();
+    private SimpleDateFormat date = new SimpleDateFormat("yyyyMMdd");
 
     @NonNull
     @Override
@@ -40,7 +42,9 @@ public class PedometerListAdapter extends RecyclerView.Adapter<PedometerListAdap
     }
 
     public void setList(List<PedometerDataModel> list) {
-        this.pedometerDataModelsList = list;
+        this.pedometerDataModelsList.clear();
+        this.pedometerDataModelsList.addAll(list);
+        if(!this.pedometerDataModelsList.isEmpty()) this.pedometerDataModelsList.remove(getItemCount() -1);
         notifyDataSetChanged();
     }
 
